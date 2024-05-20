@@ -33,6 +33,7 @@
 #include "mountpointfs/mountpointfs.h"
 #include "filesystem/romfs/romfs.h"
 #include "fat32/fat32.h"
+#include "exfat/exfat.h"
 #include "littlefs/lfs_miosix.h"
 #include "pipe/pipe.h"
 #include "kernel/logging.h"
@@ -891,13 +892,14 @@ basicFilesystemSetup(intrusive_ref_ptr<Device> dev)
         #endif
         #ifdef WITH_FATFS
         TRY_MOUNT(Fat32Fs);
+        TRY_MOUNT(ExFatFs);
         #endif
         #ifdef WITH_LITTLEFS
         TRY_MOUNT(LittleFS);
         #endif
         #undef TRY_MOUNT
     }
-    
+   
     #ifdef WITH_DEVFS
     return devfs;
     #endif
