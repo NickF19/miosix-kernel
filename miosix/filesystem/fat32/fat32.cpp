@@ -414,6 +414,10 @@ Fat32Fs::Fat32Fs(intrusive_ref_ptr<FileBase> disk)
 {
     filesystem.drv=disk;
     failed=f_mount(&filesystem,1,false)!=FR_OK;
+    
+    // In case of wrong file system type, make fail the mount
+    if(filesystem.fs_type != FS_FAT12 && filesystem.fs_type != FS_FAT16 && filesystem.fs_type != FS_FAT32)
+        failed = true; //TODO: Is it really a "NO FILESYSTEM?"
 }
 
 int Fat32Fs::open(intrusive_ref_ptr<FileBase>& file, StringPart& name,
