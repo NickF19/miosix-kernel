@@ -890,8 +890,9 @@ basicFilesystemSetup(intrusive_ref_ptr<Device> dev)
     #endif
     #ifdef WITH_FATFS
 
+    // For now, it tries to mount a FAT12/16/32 partition, 
+    // in case the mount fails for different fs_type, tries EXFAT
     TRY_MOUNT(Fat32Fs);
-    // TODO: needs to see
     TRY_MOUNT(ExFatFs);
     #endif
     #ifdef WITH_LITTLEFS
