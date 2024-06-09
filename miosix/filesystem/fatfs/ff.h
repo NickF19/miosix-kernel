@@ -107,7 +107,7 @@ typedef struct {
 
 struct FATFS
 {
-	BYTE fs_type;			/* Filesystem type (0:not mounted) */
+	BYTE fs_type;			/* Filesystem type (`0`:not mounted, `1`:FAT12, `2`:FAT16, `3`:FAT32, `4`:EXFAT) */
 	//BYTE pdrv;				/* Volume hosting physical drive */
 	miosix::intrusive_ref_ptr<miosix::FileBase> pdrv; /* Physical drive device */
 	//BYTE ldrv;				/* Logical drive number (used only when _FS_REENTRANT) */
@@ -170,7 +170,7 @@ typedef struct
 	BYTE attr;		/* Object attribute */
 	BYTE stat;		/* Object chain status (b1-0: =0:not contiguous, =2:contiguous, =3:fragmented in this session, b2:sub-directory stretched) */
 	DWORD sclust;	/* Object data start cluster (0:no cluster or root directory) */
-	DWORD objsize; 	/* Object size (valid when sclust != 0) */
+	FSIZE_t objsize; 	/* Object size (valid when sclust != 0) */
 #if _FS_EXFAT
 	DWORD n_cont; 	/* Size of first fragment - 1 (valid when stat == 3) */
 	DWORD n_frag; 	/* Size of last fragment needs to be written to FAT (valid when not zero) */
@@ -247,17 +247,15 @@ typedef struct {
 /* File information structure (FILINFO) */
 
 typedef struct {
-	DWORD	fsize;			/* File size */
-	WORD	fdate;			/* Last modified date */
-	WORD	ftime;			/* Last modified time */
-	BYTE	fattrib;		/* File attribute */
-	TCHAR	fname[13];		/* Short file name (8.3 format) */
+	FSIZE_t	fsize;					/* File size */
+	WORD	fdate;					/* Last modified date */
+	WORD	ftime;					/* Last modified time */
+	BYTE	fattrib;				/* File attribute */
+	TCHAR fname[_SFN_BUF + 1];		/* Short file name (8.3 format) */
 #if _USE_LFN
 	/*TCHAR*/ char *lfname;		 /* Pointer to the LFN buffer */
 	TCHAR 	altname[_SFN_BUF + 1]; /* Alternative file name */
 	UINT	lfsize;				 /* Size of LFN buffer in TCHAR */
-#else
-	TCHAR fname[12 + 1];	 /* File name */
 #endif
 	unsigned int inode; //By TFT: support inodes
 } FILINFO;
@@ -324,10 +322,10 @@ FRESULT f_close (FIL* fp);																	 /* Close an open file object */
 FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);									 /* Read data from a file */
 FRESULT f_write (FIL* fp, const void* buff, UINT btw, UINT* bw);							 /* Write data to a file */
 FRESULT f_forward (FIL* fp, UINT(*func)(const BYTE*,UINT), UINT btf, UINT* bf);				 /* Forward data to the stream */
-FRESULT f_lseek (FIL* fp, DWORD ofs);														 /* Move file pointer of a file object */
+FRESULT f_lseek (FIL* fp, FSIZE_t ofs);														 /* Move file pointer of a file object */
 FRESULT f_truncate (FIL* fp);																 /* Truncate file */
 FRESULT f_sync (FIL* fp);																	 /* Flush cached data of a writing file */
-FRESULT f_opendir (FATFS* fs, DIR_* dp, const /*TCHAR*/char* path);						 	/* Open a directory */
+FRESULT f_opendir (FATFS* fs, DIR_* dp, const /*TCHAR*/char* path);						 	 /* Open a directory */
 FRESULT f_closedir (DIR_* dp);																 /* Close an open directory */
 FRESULT f_readdir (DIR_* dp, FILINFO* fno);													 /* Read a directory item */
 FRESULT f_mkdir (FATFS* fs, const /*TCHAR*/ char* path);									 /* Create a sub directory */
@@ -338,14 +336,15 @@ FRESULT f_chmod (FATFS* fs, const /*TCHAR*/ char* path, BYTE value, BYTE mask);	
 FRESULT f_utime (FATFS* fs, const /*TCHAR*/ char* path, const FILINFO* fno);				 /* Change times-tamp of the file/dir */
 FRESULT f_chdir (FATFS* fs, const TCHAR* path);												 /* Change current directory */
 // NOTE: Removed, since the multi-partition and multi-drive aspects will be managed by Miosix
-//FRESULT f_chdrive (const TCHAR* path);														 /* Change current drive */ 
+//FRESULT f_chdrive (const TCHAR* path);													 /* Change current drive */ 
 FRESULT f_getcwd( FATFS* fs, TCHAR *buff, UINT len);										 /* Get current directory */
 FRESULT f_getfree (FATFS* fs, /*const TCHAR* path,*/ DWORD* nclst /*, FATFS** fatfs*/);		 /* Get number of free clusters on the drive */
 FRESULT f_getlabel (FATFS* fs, const TCHAR* path, TCHAR* label, DWORD* sn);					 /* Get volume label */
 FRESULT f_setlabel (FATFS* fs, const TCHAR* label);											 /* Set volume label */
+FRESULT f_expand (FIL* fp, FSIZE_t fsz, BYTE opt);											 /* Allocate a contiguous block to the file */
 FRESULT f_mount (FATFS* fs, /*const TCHAR* path,*/ BYTE opt, bool umount);					 /* Mount/Unmount a logical drive */
 FRESULT f_mkfs (const TCHAR* path, BYTE sfd, UINT au);										 /* Create a file system on the volume */
-FRESULT f_fdisk (BYTE pdrv, const DWORD szt[], void* work);									 /* Divide a physical drive into some partitions */
+FRESULT f_fdisk (BYTE pdrv, const LBA_t ptbl[], void* work);								 /* Divide a physical drive into some partitions */
 int f_putc (TCHAR c, FIL* fp);																 /* Put a character to the file */
 int f_puts (const TCHAR* str, FIL* cp);														 /* Put a string to the file */
 int f_printf (FIL *fp, const TCHAR *str, ...);												 /* Put a formatted string to the file */

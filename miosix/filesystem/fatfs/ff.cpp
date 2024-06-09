@@ -646,7 +646,6 @@ static BYTE CurrVol;			/* Current drive */
 //static
 //FILESEM	Files[_FS_LOCK];	/* Open object lock semaphores */
 #if _FS_REENTRANT
-static volatile BYTE SysLock;		/* System lock flag to protect Files[] (0:no mutex, 1:unlocked, 2:locked) */
 volatile BYTE SysLock;		/* System lock flag to protect Files[] (0:no mutex, 1:unlocked, 2:locked) */
 volatile BYTE SysLockVolume;	/* Volume id who is locking Files[] */
 #endif
@@ -654,7 +653,7 @@ volatile BYTE SysLockVolume;	/* Volume id who is locking Files[] */
 
 #if _STR_VOLUME_ID
 #ifdef _VOLUME_STRS
-static const char *const VolumeStr[_VOLUMES] = {_VOLUME_STRS};	/* Pre-defined volume ID */
+const char *const VolumeStr[_VOLUMES] = {_VOLUME_STRS};	/* Pre-defined volume ID */
 #endif
 #endif
 
@@ -662,7 +661,7 @@ static const char *const VolumeStr[_VOLUMES] = {_VOLUME_STRS};	/* Pre-defined vo
 #if _MIN_GPT > 0x100000000
 #error Wrong _MIN_GPT setting
 #endif
-static const BYTE GUID_MS_Basic[16] = {0xA2,0xA0,0xD0,0xEB,0xE5,0xB9,0x33,0x44,0x87,0xC0,0x68,0xB6,0xB7,0x26,0x99,0xC7};
+constexpr BYTE GUID_MS_Basic[16] = {0xA2,0xA0,0xD0,0xEB,0xE5,0xB9,0x33,0x44,0x87,0xC0,0x68,0xB6,0xB7,0x26,0x99,0xC7};
 #endif
 
 /*--------------------------------*/
@@ -693,10 +692,8 @@ static const BYTE GUID_MS_Basic[16] = {0xA2,0xA0,0xD0,0xEB,0xE5,0xB9,0x33,0x44,0
 
 #if _USE_LFN == 1		/* LFN enabled with static working buffer */
 #if _FS_EXFAT
-static BYTE	DirBuf[MAXDIRB(_MAX_LFN)];	/* Directory entry block scratchpad buffer */
 BYTE	DirBuf[MAXDIRB(_MAX_LFN)];	/* Directory entry block scratchpad buffer */
 #endif
-static WCHAR LfnBuf[_MAX_LFN + 1];		/* LFN working buffer */
 WCHAR LfnBuf[_MAX_LFN + 1];		/* LFN working buffer */
 #define DEF_NAMEBUF			
 #define INIT_NAMBUF(fs)

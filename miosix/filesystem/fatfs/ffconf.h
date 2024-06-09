@@ -268,6 +268,9 @@
 /* This option switches support for exFAT filesystem. (0:Disable or 1:Enable)
 /  To enable exFAT, also LFN needs to be enabled. (_USE_LFN >= 1)
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
+#if (_FS_EXFAT ^ _LBA64)
+#error _FS_EXFAT need to be enabled in case of _LBA64 enabled. Also, off64_t is needed
+#endif
 
 /* A header file that defines sync object types on the O/S, such as
 /  windows.h, ucos_ii.h and semphr.h, must be included prior to ff.h. */

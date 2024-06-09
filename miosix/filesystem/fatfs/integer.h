@@ -48,7 +48,7 @@ typedef unsigned long long  LBA_t;
 
 #else
 /* These types MUST be 32 bit if not EXFAT (FAT) */
-typedef unsigned long       FSIZE_t;
+typedef unsigned long   FSIZE_t;
 typedef unsigned long   LBA_t;
 
 #endif //_FS_EXFAT
