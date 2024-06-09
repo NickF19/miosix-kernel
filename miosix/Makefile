@@ -34,6 +34,7 @@ filesystem/console/console_device.cpp                                      \
 filesystem/mountpointfs/mountpointfs.cpp                                   \
 filesystem/devfs/devfs.cpp                                                 \
 filesystem/fat32/fat32.cpp                                                 \
+filesystem/exfat/exfat.cpp                                                 \
 filesystem/fatfs/ff.cpp                                                    \
 filesystem/fatfs/diskio.cpp                                                \
 filesystem/fatfs/wtoupper.cpp                                              \
