@@ -647,7 +647,8 @@ static BYTE CurrVol;			/* Current drive */
 //FILESEM	Files[_FS_LOCK];	/* Open object lock semaphores */
 #if _FS_REENTRANT
 static volatile BYTE SysLock;		/* System lock flag to protect Files[] (0:no mutex, 1:unlocked, 2:locked) */
-static volatile BYTE SysLockVolume;	/* Volume id who is locking Files[] */
+volatile BYTE SysLock;		/* System lock flag to protect Files[] (0:no mutex, 1:unlocked, 2:locked) */
+volatile BYTE SysLockVolume;	/* Volume id who is locking Files[] */
 #endif
 #endif
 
@@ -693,8 +694,10 @@ static const BYTE GUID_MS_Basic[16] = {0xA2,0xA0,0xD0,0xEB,0xE5,0xB9,0x33,0x44,0
 #if _USE_LFN == 1		/* LFN enabled with static working buffer */
 #if _FS_EXFAT
 static BYTE	DirBuf[MAXDIRB(_MAX_LFN)];	/* Directory entry block scratchpad buffer */
+BYTE	DirBuf[MAXDIRB(_MAX_LFN)];	/* Directory entry block scratchpad buffer */
 #endif
 static WCHAR LfnBuf[_MAX_LFN + 1];		/* LFN working buffer */
+WCHAR LfnBuf[_MAX_LFN + 1];		/* LFN working buffer */
 #define DEF_NAMEBUF			
 #define INIT_NAMBUF(fs)
 #define INIT_BUF(dobj)		{ (dobj).lfn = fs->LfnBuf; }
@@ -1454,11 +1457,11 @@ DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status 
 
 				if (obj->stat == 2 && cofs <= clen) {	/* Is it a contiguous chain? */
 					val = (cofs == clen) ? 0x7FFFFFFF : clst + 1;	/* No data on the FAT, generate the value */
-					break;
+					return val;
 				}
 				if (obj->stat == 3 && cofs < obj->n_cont) {	/* Is it in the 1st fragment? */
 					val = clst + 1; 	/* Generate the value */
-					break;
+					return val;
 				}
 				if (obj->stat != 2) {	/* Get value from FAT if FAT chain is valid */
 					if (obj->n_frag != 0) {	/* Is it on the growing edge? */
@@ -1467,7 +1470,7 @@ DWORD get_fat (	/* 0xFFFFFFFF:Disk error, 1:Internal error, Else:Cluster status 
 						if (move_window(fs, fs->fatbase + (clst / (SS(fs) / 4))) != FR_OK) break;
 						val = ld_dword(fs->win + clst * 4 % SS(fs)) & 0x7FFFFFFF;
 					}
-					break;
+					return val;
 				}
 			}
 			return 1;	/* Internal error */
@@ -3773,7 +3776,7 @@ static FIND_RETURN find_volume (	/* Returns BS status found in the hosting drive
 	if (fs->fs_type) {					/* If the volume has been mounted */
 		DRESULT stat = RES_OK;//disk_status(fs->drv);
 		if (!(stat & STA_NOINIT)) {		/* and the physical drive is kept initialized */
-			if(fs->fs_type ==FS_FAT12 || fs->fs_type == FS_FAT16 || fs->fs_type == FS_FAT32)
+			if(fs->fs_type == FS_FAT12 || fs->fs_type == FS_FAT16 || fs->fs_type == FS_FAT32)
 				return {FR_OK, 0};				/* The file system object is valid */
 			else if (fs->fs_type == FS_EXFAT)
 				return {FR_OK, 1};
@@ -3808,7 +3811,7 @@ static FIND_RETURN find_volume (	/* Returns BS status found in the hosting drive
 	if (_MULTI_PARTITION && part > 4) return {FR_NO_FILESYSTEM, fmt};	/* MBR has 4 partitions max */
 	
 	bsect = 0;
-	fmt = check_fs(fs, bsect);					/* Load sector 0 and check if it is an FAT boot sector as SFD */
+	fmt = check_fs(fs, bsect);					/* 0:FAT/FAT32 VBR, 1:exFAT VBR, 2:Not FAT and valid BS, 3:Not FAT and invalid BS, 4:Disk error */
 
 	for (i = 0; i < 4; i++) {		/* Load partition offset in the MBR */
 		mbr_pt[i] = ld_dword(fs->win + MBR_Table + i * SZ_PTE + PTE_StLba);
@@ -3916,6 +3919,7 @@ static FIND_RETURN find_volume (	/* Returns BS status found in the hosting drive
 		if (nclst <= MAX_FAT32) setFmt = FS_FAT32;
 		if (nclst <= MAX_FAT16) setFmt = FS_FAT16;
 		if (nclst <= MAX_FAT12) setFmt = FS_FAT12;
+		if (fmt == 1) setFmt = FS_EXFAT;
 		if (setFmt == 0) return {FR_NO_FILESYSTEM, fmt};
 
 		/* Boundaries and Limits */
@@ -3985,7 +3989,7 @@ static FIND_RETURN find_volume (	/* Returns BS status found in the hosting drive
 	if(fmt >2)
 		return {FR_NO_FILESYSTEM, fmt};
 	if(fmt!=2 && part == 0){
-		fs->fs_type = setFmt;	/* FAT sub-type */
+		fs->fs_type = (BYTE)setFmt;	/* FAT sub-type */
 		fs->id = miosix::atomicAddExchange(&Fsid,1)/*++Fsid*/;	/* File system mount ID */
 		return {FR_OK, fmt};	
 	}
@@ -4283,7 +4287,6 @@ FRESULT f_mount (
 )
 {
 	FATFS *cfs;
-	int vol;
 	FRESULT res;
 	//const TCHAR *rp = path;
 
@@ -5087,7 +5090,7 @@ FRESULT f_getcwd (
 #if _FS_MINIMIZE <= 2
 FRESULT f_lseek (
 	FIL* fp,		/* Pointer to the file object */
-	DWORD ofs		/* File pointer from top of file */
+	FSIZE_t ofs		/* File pointer from top of file */
 )
 {
 	FRESULT res;
@@ -6331,7 +6334,8 @@ FRESULT f_forward (
 )
 {
 	FRESULT res;
-	DWORD remain, clst, sect;
+	FSIZE_t remain;
+	DWORD clst, sect;
 	UINT rcnt;
 	BYTE csect;
 
