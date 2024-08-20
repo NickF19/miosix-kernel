@@ -3536,7 +3536,7 @@ static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 	const /*TCHAR*/ char *path	/* Full-path string to find a file or directory */
 )
 {
-	FRESULT res;
+	FRESULT res = FR_OK;
 	BYTE ns, *dir;
 	FATFS *fs = dp->obj.fs;
 
@@ -5789,11 +5789,6 @@ FRESULT f_mkdir (
 					res = sync_fs(fs);
 			}
 			}
-			if (res == FR_OK) res = dir_register(&dj);	/* Register the object to the directoy */
-			if (res != FR_OK) {
-				remove_chain(&dj.obj, dcl, 0);			/* Could not register, remove cluster chain */
-				}
-			if (res == FR_OK) res = dir_register(&dj);	/* Register the object to the directoy */
 			if (res != FR_OK) {
 				remove_chain(&dj.obj, dcl, 0);			/* Could not register, remove cluster chain */
 			} else {
