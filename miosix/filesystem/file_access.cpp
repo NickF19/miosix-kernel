@@ -24,7 +24,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
-
+#include "filesystem/fatfs/ffconf.h"
 #include "file_access.h"
 #include <vector>
 #include <climits>
@@ -891,8 +891,12 @@ basicFilesystemSetup(intrusive_ref_ptr<Device> dev)
         #define TRY_MOUNT(x) if (tryMount<x>(#x, dev, rootFs)) return
         #endif
         #ifdef WITH_FATFS
-        TRY_MOUNT(Fat32Fs);
+
+#ifdef _FS_EXFAT
         TRY_MOUNT(ExFatFs);
+#else
+        TRY_MOUNT(Fat32Fs);
+#endif
         #endif
         #ifdef WITH_LITTLEFS
         TRY_MOUNT(LittleFS);

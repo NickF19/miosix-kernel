@@ -24,7 +24,9 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
+#include "filesystem/fatfs/ffconf.h"
 
+#ifndef _FS_EXFAT
 #ifndef FAT32_H
 #define	FAT32_H
 
@@ -135,3 +137,4 @@ private:
 } //namespace miosix
 
 #endif //FAT32_H
+#endif

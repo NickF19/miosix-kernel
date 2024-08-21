@@ -24,7 +24,9 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
+#include "filesystem/fatfs/ffconf.h"
 
+#ifdef _FS_EXFAT
 #include "exfat.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -281,7 +283,7 @@ namespace miosix
     ssize_t ExFatFile::write(const void *data, size_t len)
     {
         Lock<FastMutex> l(mutex);
-        unsigned int bytesWritten;
+        unsigned long long int bytesWritten;
         // NOTE: if we lseek'd past the end, we f_lseek'd to the end and seekPastEnd
         // is >0. We need to handle this special case by filling the gap with zeros
         // Note that in this case write should not return the number of bytes written
@@ -289,17 +291,17 @@ namespace miosix
         if (seekPastEnd > 0)
         {
             // If filling the gap would overflow we should not even start
-            if (seekPastEnd + static_cast<off_t>(f_size(&file)) + len > 0xffffffff)
+            if (seekPastEnd + static_cast<off_t>(f_size(&file)) + len > 0xffffffffffffffff)
                 return -EOVERFLOW;
             // To write zeros efficiently we have to allocate a buffer of zeros
-            unsigned int bufSize = min<unsigned int>(seekPastEnd, FATFS_EXTEND_BUFFER);
+            unsigned long long int bufSize = min<unsigned long long int>(seekPastEnd, FATFS_EXTEND_BUFFER);
             unique_ptr<char, decltype(&free)> buffer(
                 reinterpret_cast<char *>(calloc(1, bufSize)), &free);
             if (buffer.get() == nullptr)
                 return -ENOMEM; // Not enough memory
             while (seekPastEnd > 0)
             {
-                unsigned int toWrite = min<unsigned int>(seekPastEnd, bufSize);
+                unsigned long long int toWrite = min<unsigned long long int>(seekPastEnd, bufSize);
                 int res = translateError(f_write(&file, buffer.get(), toWrite, &bytesWritten));
                 if (res || bytesWritten == 0)
                     return res; // Error while filling the gap
@@ -312,7 +314,7 @@ namespace miosix
         if (f_sync(&file) != FR_OK)
             return -EIO;
 #endif // SYNC_AFTER_WRITE
-        return static_cast<int>(bytesWritten);
+        return static_cast<long int>(bytesWritten);
     }
 
     ssize_t ExFatFile::read(void *data, size_t len)
@@ -640,3 +642,4 @@ namespace miosix
 #endif // WITH_FILESYSTEM
 
 } // namespace miosix
+#endif

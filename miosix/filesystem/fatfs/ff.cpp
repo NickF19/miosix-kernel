@@ -696,7 +696,7 @@ BYTE	DirBuf[MAXDIRB(_MAX_LFN)];	/* Directory entry block scratchpad buffer */
 #endif
 WCHAR LfnBuf[_MAX_LFN + 1];		/* LFN working buffer */
 #define DEF_NAMEBUF			
-#define INIT_NAMBUF(fs)
+#define INIT_NAMBUF(fs)		{ fs->lfnbuf = fs->LfnBuf; }
 #define INIT_BUF(dobj)		{ (dobj).lfn = fs->LfnBuf; }
 #define FREE_NAMBUF()
 #define	FREE_BUF()
@@ -4394,6 +4394,8 @@ FRESULT f_open (
 				if (res == FR_NO_FILE) {		/* There is no file to open, create a new entry */
 #ifdef _FS_LOCK
 					res = enq_share(&dj) ? dir_register(&dj) : FR_TOO_MANY_OPEN_FILES;
+					if(res != FR_OK)
+						return res;
 #else
 					res = dir_register(&dj);
 #endif
@@ -4664,14 +4666,14 @@ FRESULT f_read (
 FRESULT f_write (
 	FIL* fp,			/* Pointer to the file object */
 	const void *buff,	/* Pointer to the data to be written */
-	UINT btw,			/* Number of bytes to write */
-	UINT* bw			/* Pointer to number of bytes written */
+	FSIZE_t btw,			/* Number of bytes to write */
+	FSIZE_t* bw			/* Pointer to number of bytes written */
 )
 {
 	FRESULT res;
 	DWORD clst;
 	LBA_t sect;
-	UINT wcnt, cc, csect;
+	FSIZE_t wcnt, cc, csect;
 	const BYTE *wbuff = (const BYTE*)buff;
 
 

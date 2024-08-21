@@ -24,7 +24,9 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
+#include "filesystem/fatfs/ffconf.h"
 
+#ifndef _FS_EXFAT
 #include "fat32.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -590,3 +592,4 @@ int Fat32Fs::unlinkRmdirHelper(StringPart& name, bool delDir)
 #endif //WITH_FILESYSTEM
 
 } //namespace miosix
+#endif
