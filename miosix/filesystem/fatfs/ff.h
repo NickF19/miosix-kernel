@@ -320,7 +320,7 @@ enum FRESULT {
 FRESULT f_open (FATFS *fs, FIL* fp, const /*TCHAR*/char* path, BYTE mode);					 /* Open or create a file */
 FRESULT f_close (FIL* fp);																	 /* Close an open file object */
 FRESULT f_read (FIL* fp, void* buff, UINT btr, UINT* br);									 /* Read data from a file */
-FRESULT f_write (FIL* fp, const void* buff, FSIZE_t btw, FSIZE_t* bw);						 /* Write data to a file */
+FRESULT f_write (FIL* fp, const void* buff, UINT btw, UINT* bw);						 /* Write data to a file */
 FRESULT f_forward (FIL* fp, UINT(*func)(const BYTE*,UINT), UINT btf, UINT* bf);				 /* Forward data to the stream */
 FRESULT f_lseek (FIL* fp, FSIZE_t ofs);														 /* Move file pointer of a file object */
 FRESULT f_truncate (FIL* fp);																 /* Truncate file */

@@ -26,7 +26,7 @@
  ***************************************************************************/
 #include "filesystem/fatfs/ffconf.h"
 
-#ifdef _FS_EXFAT
+#if _FS_EXFAT == 1
 #include "exfat.h"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -283,7 +283,7 @@ namespace miosix
     ssize_t ExFatFile::write(const void *data, size_t len)
     {
         Lock<FastMutex> l(mutex);
-        unsigned long long int bytesWritten;
+        unsigned int bytesWritten;
         // NOTE: if we lseek'd past the end, we f_lseek'd to the end and seekPastEnd
         // is >0. We need to handle this special case by filling the gap with zeros
         // Note that in this case write should not return the number of bytes written
@@ -301,7 +301,7 @@ namespace miosix
                 return -ENOMEM; // Not enough memory
             while (seekPastEnd > 0)
             {
-                unsigned long long int toWrite = min<unsigned long long int>(seekPastEnd, bufSize);
+                unsigned int toWrite = min<unsigned long long int>(seekPastEnd, bufSize);
                 int res = translateError(f_write(&file, buffer.get(), toWrite, &bytesWritten));
                 if (res || bytesWritten == 0)
                     return res; // Error while filling the gap

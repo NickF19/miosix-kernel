@@ -892,7 +892,7 @@ basicFilesystemSetup(intrusive_ref_ptr<Device> dev)
         #endif
         #ifdef WITH_FATFS
 
-#ifdef _FS_EXFAT
+#if _FS_EXFAT == 1
         TRY_MOUNT(ExFatFs);
 #else
         TRY_MOUNT(Fat32Fs);

@@ -26,7 +26,7 @@
  ***************************************************************************/
 #include "filesystem/fatfs/ffconf.h"
 
-#ifndef _FS_EXFAT
+#if _FS_EXFAT == 0
 #ifndef FAT32_H
 #define	FAT32_H
 

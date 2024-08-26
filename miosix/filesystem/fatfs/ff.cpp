@@ -3580,8 +3580,6 @@ static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 			if (res != FR_OK) {				/* Failed to find the object */
 				if (res == FR_NO_FILE) {	/* Object is not found */
 					if (_FS_RPATH && (ns & NS_DOT)) {	/* If dot entry is not exist, stay there */
-						dp->sclust = 0;
-						dp->dir = 0;
 						if (!(ns & NS_LAST)) continue;	/* Continue to follow if not last segment */
 						dp->fn[NS] = NS_NONAME;
 						res = FR_OK;
@@ -3611,8 +3609,8 @@ static FRESULT follow_path (	/* FR_OK(0): successful, !=0: error code */
 						res = FR_NO_PATH;
 						break;
 					}
-					dp->sclust = ld_clust(fs, dir);
-					//dp->obj.sclust = ld_clust(fs, fs->win + dp->dptr % SS(fs));	/* Open next directory */
+					//dp->sclust = ld_clust(fs, dir);
+					dp->obj.sclust = ld_clust(fs, fs->win + dp->dptr % SS(fs));	/* Open next directory */
 				}
 		}
 	}
@@ -3810,16 +3808,18 @@ static FIND_RETURN find_volume (	/* Returns BS status found in the hosting drive
 	bsect = 0;
 	fmt = check_fs(fs, bsect);					/* 0:FAT/FAT32 VBR, 1:exFAT VBR, 2:Not FAT and valid BS, 3:Not FAT and invalid BS, 4:Disk error */
 
-	for (i = 0; i < 4; i++) {		/* Load partition offset in the MBR */
-		mbr_pt[i] = ld_dword(fs->win + MBR_Table + i * SZ_PTE + PTE_StLba);
+	if(fmt >= 2){
+		for (i = 0; i < 4; i++) {		/* Load partition offset in the MBR */
+			mbr_pt[i] = ld_dword(fs->win + MBR_Table + i * SZ_PTE + PTE_StLba);
+		}
+		i = part ? part - 1 : 0;		/* Table index to find first */
+		do {							/* Find an FAT volume */
+			bsect = mbr_pt[i];
+			fmt = bsect ? check_fs(fs, bsect) : 3;	/* Check if the partition is FAT */
+		} while (part == 0 && fmt >= 2 && ++i < 4);
+		if(fmt == 3)
+			return {FR_NO_FILESYSTEM, fmt};
 	}
-	i = part ? part - 1 : 0;		/* Table index to find first */
-	do {							/* Find an FAT volume */
-		bsect = mbr_pt[i];
-		fmt = bsect ? check_fs(fs, bsect) : 3;	/* Check if the partition is FAT */
-	} while (part == 0 && fmt >= 2 && ++i < 4);
-	if(fmt == 3)
-		return {FR_NO_FILESYSTEM, fmt};
 	
 	UINT setFmt = 0;
 #if _FS_EXFAT
@@ -4539,21 +4539,7 @@ FRESULT f_open (
 	}
 
 	if (res != FR_OK) fp->obj.fs = 0;	/* Invalidate file object on error */
-	else {
-			fp->flag = mode;					/* File access mode */
-			fp->err = 0;						/* Clear error flag */
-			fp->obj.sclust = ld_clust(dj.obj.fs, dj.dir);	/* File start cluster */
-			fp->fsize = LD_DWORD(dj.dir + DIR_FileSize);	/* File size */
-			fp->fptr = 0;						/* File pointer */
-			fp->dsect = 0;
-			fp->sect = 0;
-			
-#if _USE_FASTSEEK
-			fp->cltbl = 0;						/* Normal seek mode */
-#endif
-			fp->obj.fs = dj.obj.fs;	 					/* Validate file object */
-			fp->id = fp->obj.fs->id;
-	}
+
 	LEAVE_FF(fs, res);
 }
 
@@ -4666,8 +4652,8 @@ FRESULT f_read (
 FRESULT f_write (
 	FIL* fp,			/* Pointer to the file object */
 	const void *buff,	/* Pointer to the data to be written */
-	FSIZE_t btw,			/* Number of bytes to write */
-	FSIZE_t* bw			/* Pointer to number of bytes written */
+	UINT btw,			/* Number of bytes to write */
+	UINT* bw			/* Pointer to number of bytes written */
 )
 {
 	FRESULT res;
