@@ -8,6 +8,7 @@
 /----------------------------------------------------------------------------*/
 #ifndef _FFCONF
 #define _FFCONF 80286	/* Revision ID */
+#include "config/miosix_settings.h"
 
 
 /*---------------------------------------------------------------------------/
@@ -215,7 +216,7 @@
 /  and GET_SECTOR_SIZE command must be implemented to the disk_ioctl() function. */
 
 
-#define _LBA64		1
+#define _LBA64		_FS_EXFAT
 /* This option switches support for 64-bit LBA. (0:Disable or 1:Enable)
 /  To enable the 64-bit LBA, also exFAT needs to be enabled. (FF_FS_EXFAT == 1) */
 
@@ -264,7 +265,7 @@
 /  and reduce code size.
 */
 
-#define _FS_EXFAT		1
+//#define _FS_EXFAT		1 // Now in the miosix_settings.h configuration file
 /* This option switches support for exFAT filesystem. (0:Disable or 1:Enable)
 /  To enable exFAT, also LFN needs to be enabled. (_USE_LFN >= 1)
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
