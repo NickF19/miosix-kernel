@@ -5737,6 +5737,7 @@ FRESULT f_mkdir (
 		dj.obj.fs = fs;
 		INIT_NAMBUF(fs);
 		INIT_BUF(dj);
+
 		res = follow_path(&dj, path);			/* Follow the file path */
 		if (res == FR_OK) res = FR_EXIST;		/* Name collision? */
 		if (_FS_RPATH && res == FR_NO_FILE && (dj.fn[NS] & NS_DOT)) {	/* Invalid name? */
@@ -5787,10 +5788,7 @@ FRESULT f_mkdir (
 				}
 				if (res == FR_OK) {
 					res = sync_fs(fs);
-			}
-			}
-			if (res != FR_OK) {
-				remove_chain(&dj.obj, dcl, 0);			/* Could not register, remove cluster chain */
+				}
 			} else {
 				remove_chain(&sobj, dcl, 0);		/* Could not register, remove the allocated cluster */
 			}
@@ -5973,7 +5971,8 @@ FRESULT f_rename (
 					res = (djn.obj.sclust == djo.obj.sclust && djn.dptr == djo.dptr) ? FR_NO_FILE : FR_EXIST;
 				}
 				if (res == FR_NO_FILE) { 				/* It is a valid path and no name collision */
-					res = dir_register(&djn);			/* Register the new entry */
+		FREE_BUF();
+					//res = dir_register(&djn);			/* Register the new entry */
 					if (res == FR_OK) {
 						dir = djn.dir;					/* Copy directory entry of the object except name */
 						memcpy(dir + 13, buf + 13, SZ_DIR - 13);
