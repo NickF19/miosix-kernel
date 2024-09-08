@@ -1198,92 +1198,94 @@ static void clear_share (	/* Clear all lock entries of the volume */
 	}
 }
 
-static FRESULT chk_lock (	/* Check if the file can be accessed */
-	DIR_* dp,		/* Directory object pointing the file to be checked */
-	int acc			/* Desired access (0:Read, 1:Write, 2:Delete/Rename) */
-)
-{
-	UINT i, be;
+// Now shared version used instead
 
-	/* Search file semaphore table */
-	for (i = be = 0; i < miosix::FATFS_MAX_OPEN_FILES; i++) {
-		if (dp->obj.fs->Files[i].fs) {	/* Existing entry */
-			if (dp->obj.fs->Files[i].fs == dp->obj.fs &&	 	/* Check if the object matched with an open object */
-				dp->obj.fs->Files[i].clu == dp->obj.sclust &&
-				dp->obj.fs->Files[i].idx == dp->index) break;
-		} else {			/* Blank entry */
-			be = 1;
-		}
-	}
-	if (i == miosix::FATFS_MAX_OPEN_FILES)	/* The object is not opened */
-		return (be || acc == 2) ? FR_OK : FR_TOO_MANY_OPEN_FILES;	/* Is there a blank entry for new object? */
+// static FRESULT chk_lock (	/* Check if the file can be accessed */
+// 	DIR_* dp,		/* Directory object pointing the file to be checked */
+// 	int acc			/* Desired access (0:Read, 1:Write, 2:Delete/Rename) */
+// )
+// {
+// 	UINT i, be;
 
-	/* The object has been opened. Reject any open against writing file and all write mode open */
-	return (acc || dp->obj.fs->Files[i].ctr == 0x100) ? FR_LOCKED : FR_OK;
-}
+// 	/* Search file semaphore table */
+// 	for (i = be = 0; i < miosix::FATFS_MAX_OPEN_FILES; i++) {
+// 		if (dp->obj.fs->Files[i].fs) {	/* Existing entry */
+// 			if (dp->obj.fs->Files[i].fs == dp->obj.fs &&	 	/* Check if the object matched with an open object */
+// 				dp->obj.fs->Files[i].clu == dp->obj.sclust &&
+// 				dp->obj.fs->Files[i].idx == dp->index) break;
+// 		} else {			/* Blank entry */
+// 			be = 1;
+// 		}
+// 	}
+// 	if (i == miosix::FATFS_MAX_OPEN_FILES)	/* The object is not opened */
+// 		return (be || acc == 2) ? FR_OK : FR_TOO_MANY_OPEN_FILES;	/* Is there a blank entry for new object? */
 
-
-static int enq_lock (FATFS *fs)	/* Check if an entry is available for a new object */
-{
-	UINT i;
-
-	for (i = 0; i < miosix::FATFS_MAX_OPEN_FILES && fs->Files[i].fs; i++) ;
-	return (i == miosix::FATFS_MAX_OPEN_FILES) ? 0 : 1;
-}
+// 	/* The object has been opened. Reject any open against writing file and all write mode open */
+// 	return (acc || dp->obj.fs->Files[i].ctr == 0x100) ? FR_LOCKED : FR_OK;
+// }
 
 
-static UINT inc_lock (	/* Increment object open counter and returns its index (0:Internal error) */
-	DIR_* dp,	/* Directory object pointing the file to register or increment */
-	int acc		/* Desired access (0:Read, 1:Write, 2:Delete/Rename) */
-)
-{
-	UINT i;
+// static int enq_lock (FATFS *fs)	/* Check if an entry is available for a new object */
+// {
+// 	UINT i;
+
+// 	for (i = 0; i < miosix::FATFS_MAX_OPEN_FILES && fs->Files[i].fs; i++) ;
+// 	return (i == miosix::FATFS_MAX_OPEN_FILES) ? 0 : 1;
+// }
 
 
-	for (i = 0; i < miosix::FATFS_MAX_OPEN_FILES; i++) {	/* Find the object */
-		if (dp->obj.fs->Files[i].fs == dp->obj.fs &&
-			dp->obj.fs->Files[i].clu == dp->obj.sclust &&
-			dp->obj.fs->Files[i].idx == dp->index) break;
-	}
-
-	if (i == miosix::FATFS_MAX_OPEN_FILES) {				/* Not opened. Register it as new. */ 
-		for (i = 0; i < miosix::FATFS_MAX_OPEN_FILES && dp->obj.fs->Files[i].fs; i++) ; 
-		if (i == miosix::FATFS_MAX_OPEN_FILES) return 0;	/* No free entry to register (int err) */ 
-		dp->obj.fs->Files[i].clu = dp->obj.sclust;
-		dp->obj.fs->Files[i].fs = dp->obj.fs;
-		dp->obj.fs->Files[i].idx = dp->index;
-		dp->obj.fs->Files[i].ctr = 0;
-	}
-
-	if (acc && dp->obj.fs->Files[i].ctr) return 0;	/* Access violation (int err) */
-
-	dp->obj.fs->Files[i].ctr = acc ? 0x100 : dp->obj.fs->Files[i].ctr + 1;	/* Set semaphore value */
-
-	return i + 1;
-}
+// static UINT inc_lock (	/* Increment object open counter and returns its index (0:Internal error) */
+// 	DIR_* dp,	/* Directory object pointing the file to register or increment */
+// 	int acc		/* Desired access (0:Read, 1:Write, 2:Delete/Rename) */
+// )
+// {
+// 	UINT i;
 
 
-static FRESULT dec_lock (	/* Decrement object open counter */
-    FATFS *fs,
-	UINT i			/* Semaphore index (1..) */
-)
-{
-	WORD n;
-	FRESULT res;
+// 	for (i = 0; i < miosix::FATFS_MAX_OPEN_FILES; i++) {	/* Find the object */
+// 		if (dp->obj.fs->Files[i].fs == dp->obj.fs &&
+// 			dp->obj.fs->Files[i].clu == dp->obj.sclust &&
+// 			dp->obj.fs->Files[i].idx == dp->index) break;
+// 	}
+
+// 	if (i == miosix::FATFS_MAX_OPEN_FILES) {				/* Not opened. Register it as new. */ 
+// 		for (i = 0; i < miosix::FATFS_MAX_OPEN_FILES && dp->obj.fs->Files[i].fs; i++) ; 
+// 		if (i == miosix::FATFS_MAX_OPEN_FILES) return 0;	/* No free entry to register (int err) */ 
+// 		dp->obj.fs->Files[i].clu = dp->obj.sclust;
+// 		dp->obj.fs->Files[i].fs = dp->obj.fs;
+// 		dp->obj.fs->Files[i].idx = dp->index;
+// 		dp->obj.fs->Files[i].ctr = 0;
+// 	}
+
+// 	if (acc && dp->obj.fs->Files[i].ctr) return 0;	/* Access violation (int err) */
+
+// 	dp->obj.fs->Files[i].ctr = acc ? 0x100 : dp->obj.fs->Files[i].ctr + 1;	/* Set semaphore value */
+
+// 	return i + 1;
+// }
 
 
-	if (--i < miosix::FATFS_MAX_OPEN_FILES) {	/* Shift index number origin from 0 */
-		n = fs->Files[i].ctr;
-		if (n == 0x100) n = 0;		/* If write mode open, delete the entry */
-		if (n) n--;					/* Decrement read mode open count */
-		fs->Files[i].ctr = n;
-		if (!n) fs->Files[i].fs = 0;	/* Delete the entry if open count gets zero */
-		res = FR_OK;
-	} else {
-		res = FR_INT_ERR;			/* Invalid index nunber */
-	}
-	return res;
-}
+// static FRESULT dec_lock (	/* Decrement object open counter */
+//     FATFS *fs,
+// 	UINT i			/* Semaphore index (1..) */
+// )
+// {
+// 	WORD n;
+// 	FRESULT res;
+
+
+// 	if (--i < miosix::FATFS_MAX_OPEN_FILES) {	/* Shift index number origin from 0 */
+// 		n = fs->Files[i].ctr;
+// 		if (n == 0x100) n = 0;		/* If write mode open, delete the entry */
+// 		if (n) n--;					/* Decrement read mode open count */
+// 		fs->Files[i].ctr = n;
+// 		if (!n) fs->Files[i].fs = 0;	/* Delete the entry if open count gets zero */
+// 		res = FR_OK;
+// 	} else {
+// 		res = FR_INT_ERR;			/* Invalid index nunber */
+// 	}
+// 	return res;
+// }
 
 
 static void clear_lock (	/* Clear lock entries of the volume */
@@ -2017,36 +2019,36 @@ static void put_lfn (
 
 #endif	/* !_FS_READONLY */
 
-// TODO: Is it still needed?
-#if !_FS_READONLY
-static void fit_lfn (
-	const WCHAR* lfnbuf,	/* Pointer to the LFN buffer */
-	BYTE* dir,				/* Pointer to the directory entry */
-	BYTE ord,				/* LFN order (1-20) */
-	BYTE sum				/* SFN sum */
-)
-{
-	UINT i, s;
-	WCHAR wc;
+// // Not used anymore
+// #if !_FS_READONLY
+// static void fit_lfn (
+// 	const WCHAR* lfnbuf,	/* Pointer to the LFN buffer */
+// 	BYTE* dir,				/* Pointer to the directory entry */
+// 	BYTE ord,				/* LFN order (1-20) */
+// 	BYTE sum				/* SFN sum */
+// )
+// {
+// 	UINT i, s;
+// 	WCHAR wc;
 
 
-	dir[LDIR_Chksum] = sum;			/* Set check sum */
-	dir[LDIR_Attr] = AM_LFN;		/* Set attribute. LFN entry */
-	dir[LDIR_Type] = 0;
-	ST_WORD(dir+LDIR_FstClusLO, 0);
+// 	dir[LDIR_Chksum] = sum;			/* Set check sum */
+// 	dir[LDIR_Attr] = AM_LFN;		/* Set attribute. LFN entry */
+// 	dir[LDIR_Type] = 0;
+// 	ST_WORD(dir+LDIR_FstClusLO, 0);
 
-	i = (ord - 1) * 13;				/* Get offset in the LFN buffer */
-	s = wc = 0;
-	do {
-		if (wc != 0xFFFF) wc = lfnbuf[i++];	/* Get an effective character */
-		ST_WORD(dir+LfnOfs[s], wc);	/* Put it */
-		if (!wc) wc = 0xFFFF;		/* Padding characters following last character */
-	} while (++s < 13);
-	if (wc == 0xFFFF || !lfnbuf[i]) ord |= LLE;	/* Bottom LFN part is the start of LFN sequence */
-	dir[LDIR_Ord] = ord;			/* Set the LFN order */
-}
+// 	i = (ord - 1) * 13;				/* Get offset in the LFN buffer */
+// 	s = wc = 0;
+// 	do {
+// 		if (wc != 0xFFFF) wc = lfnbuf[i++];	/* Get an effective character */
+// 		ST_WORD(dir+LfnOfs[s], wc);	/* Put it */
+// 		if (!wc) wc = 0xFFFF;		/* Padding characters following last character */
+// 	} while (++s < 13);
+// 	if (wc == 0xFFFF || !lfnbuf[i]) ord |= LLE;	/* Bottom LFN part is the start of LFN sequence */
+// 	dir[LDIR_Ord] = ord;			/* Set the LFN order */
+// }
 
-#endif
+// #endif
 #endif	/* _USE_LFN */
 
 
@@ -6207,7 +6209,7 @@ FRESULT f_setlabel (
 #endif /* _USE_LABEL */
 
 
-#if FF_USE_EXPAND && !FF_FS_READONLY
+#if _USE_EXPAND && !_FS_READONLY
 /*-----------------------------------------------------------------------*/
 /* Allocate a Contiguous Blocks to the File                              */
 /*-----------------------------------------------------------------------*/
@@ -6226,7 +6228,7 @@ FRESULT f_expand (
 	res = validate(&fp->obj, &fs);		/* Check validity of the file object */
 	if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK) LEAVE_FF(fs, res);
 	if (fsz == 0 || fp->obj.objsize != 0 || !(fp->flag & FA_WRITE)) LEAVE_FF(fs, FR_DENIED);
-#if FF_FS_EXFAT
+#if _FS_EXFAT
 	if (fs->fs_type != FS_EXFAT && fsz >= 0x100000000) LEAVE_FF(fs, FR_DENIED);	/* Check if in size limit */
 #endif
 	n = (DWORD)fs->csize * SS(fs);	/* Cluster size */
@@ -6234,7 +6236,7 @@ FRESULT f_expand (
 	stcl = fs->last_clst; lclst = 0;
 	if (stcl < 2 || stcl >= fs->n_fatent) stcl = 2;
 
-#if FF_FS_EXFAT
+#if _FS_EXFAT
 	if (fs->fs_type == FS_EXFAT) {
 		scl = find_bitmap(fs, stcl, tcl);			/* Find a contiguous cluster block */
 		if (scl == 0) res = FR_DENIED;				/* No contiguous cluster block was found */
@@ -6287,7 +6289,7 @@ FRESULT f_expand (
 		if (opt) {	/* Is it allocated now? */
 			fp->obj.sclust = scl;		/* Update object allocation information */
 			fp->obj.objsize = fsz;
-			if (FF_FS_EXFAT) fp->obj.stat = 2;	/* Set status 'contiguous chain' */
+			if (_FS_EXFAT) fp->obj.stat = 2;	/* Set status 'contiguous chain' */
 			fp->flag |= FA_MODIFIED;
 			if (fs->free_clst <= fs->n_fatent - 2) {	/* Update FSINFO */
 				fs->free_clst -= tcl;
@@ -6299,7 +6301,7 @@ FRESULT f_expand (
 	LEAVE_FF(fs, res);
 }
 
-#endif /* FF_USE_EXPAND && !FF_FS_READONLY */
+#endif /* _USE_EXPAND && !_FS_READONLY */
 
 
 /*-----------------------------------------------------------------------*/
