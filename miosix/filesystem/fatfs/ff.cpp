@@ -5622,14 +5622,15 @@ FRESULT f_unlink (
 	FFOBJID obj;
 #endif
 	DEF_NAMEBUF
-
+	INIT_NAMBUF(fs);
+	INIT_BUF(dj);
+	INIT_BUF(sdj);
 
 	/* Get logical drive */
 	//res = mount_volume(&path, &fs, FA_WRITE);
 	res = find_volume(fs).res;
 	if (res == FR_OK) {
 		dj.obj.fs = fs;
-		INIT_NAMBUF(fs);
 		res = follow_path(&dj, path);		/* Follow the file path */
 		if (_FS_RPATH && res == FR_OK && (dj.fn[NS] & NS_DOT)) {
 			res = FR_INVALID_NAME;			/* Cannot remove dot entry */
@@ -5692,6 +5693,7 @@ FRESULT f_unlink (
 				if (res == FR_OK) res = sync_fs(fs);
 			}
 		}
+		FREE_BUF();
 		FREE_NAMBUF();
 	}
 
