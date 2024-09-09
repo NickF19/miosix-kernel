@@ -24,7 +24,7 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
-
+#include "filesystem/fatfs/ffconf.h"
 #include "file_access.h"
 #include <vector>
 #include <climits>
@@ -33,6 +33,7 @@
 #include "mountpointfs/mountpointfs.h"
 #include "filesystem/romfs/romfs.h"
 #include "fat32/fat32.h"
+#include "exfat/exfat.h"
 #include "littlefs/lfs_miosix.h"
 #include "pipe/pipe.h"
 #include "kernel/logging.h"
@@ -252,6 +253,20 @@ int FileDescriptorTable::truncate(const char *name, off_t size)
     StringPart sp(path,string::npos,openData.off);
     return openData.fs->truncate(sp,size);
 }
+
+#if _FS_EXFAT == 1
+long int FileDescriptorTable::truncate64(const char *name, long long int size)
+{
+    if(size<0) return -EINVAL;
+    if(name==nullptr || name[0]=='\0') return -EFAULT;
+    string path=absolutePath(name);
+    if(path.empty()) return -ENAMETOOLONG;
+    ResolvedPath openData=FilesystemManager::instance().resolvePath(path);
+    if(openData.result<0) return openData.result;
+    StringPart sp(path,string::npos,openData.off);
+    return openData.fs->truncate64(sp,size);
+}
+#endif
 
 int FileDescriptorTable::rename(const char *oldName, const char *newName)
 {
@@ -890,14 +905,19 @@ basicFilesystemSetup(intrusive_ref_ptr<Device> dev)
         #define TRY_MOUNT(x) if (tryMount<x>(#x, dev, rootFs)) return
         #endif
         #ifdef WITH_FATFS
+
+#if _FS_EXFAT == 1
+        TRY_MOUNT(ExFatFs);
+#else
         TRY_MOUNT(Fat32Fs);
+#endif
         #endif
         #ifdef WITH_LITTLEFS
         TRY_MOUNT(LittleFS);
         #endif
         #undef TRY_MOUNT
     }
-    
+ 
     #ifdef WITH_DEVFS
     return devfs;
     #endif

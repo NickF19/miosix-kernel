@@ -181,7 +181,25 @@ public:
         if(!file) return -EBADF;
         return file->lseek(pos,whence);
     }
-    
+
+    #if _FS_EXFAT == 1
+    /**
+     * Move file pointer, if the file supports random-access.
+     * 64-bit version
+     * \param pos offset to sum to the beginning of the file, current position
+     * or end of file, depending on whence
+     * \param whence SEEK_SET, SEEK_CUR or SEEK_END
+     * \return the offset from the beginning of the file if the operation
+     * completed, or a negative number in case of errors
+     */
+    long long int lseek64(int fd, long long int pos, int whence)
+    {
+        intrusive_ref_ptr<FileBase> file=getFile(fd);
+        if(!file) return -EBADF;
+        return file->lseek64(pos,whence);
+    }
+    #endif
+
     /**
      * Return file information.
      * \param pstat pointer to stat struct
@@ -321,6 +339,16 @@ public:
      * \return 0 on success, or a negative number on failure
      */
     int truncate(const char *name, off_t size);
+    
+    #if _FS_EXFAT == 1
+    /**
+     * Change file size
+     * \param name file to truncate
+     * \param size new file size
+     * \return 0 on success, or a negative number on failure
+     */
+    long int truncate64(const char *name, long long int size);
+    #endif
 
     /**
      * Change file size
@@ -335,6 +363,23 @@ public:
         if(!file) return -EBADF;
         return file->ftruncate(size);
     }
+
+    #if _FS_EXFAT == 1
+    /**
+     * Change file size
+     * 64-bit verion
+     * \param fd file descriptor
+     * \param size new file size
+     * \return 0 on success, or a negative number on failure
+     */
+    int ftruncate64(int fd, off_t size)
+    {
+        if(size<0) return -EINVAL;
+        intrusive_ref_ptr<FileBase> file=getFile(fd);
+        if(!file) return -EBADF;
+        return file->ftruncate64(size);
+    }
+    #endif
     
     /**
      * Rename a file or directory

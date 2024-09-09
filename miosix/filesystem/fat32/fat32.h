@@ -24,13 +24,15 @@
  *   You should have received a copy of the GNU General Public License     *
  *   along with this program; if not, see <http://www.gnu.org/licenses/>   *
  ***************************************************************************/
+#include "filesystem/fatfs/ffconf.h"
 
+#if _FS_EXFAT == 0
 #ifndef FAT32_H
 #define	FAT32_H
 
 #include "filesystem/file.h"
 #include "kernel/sync.h"
-#include "ff.h"
+#include "filesystem/fatfs/ff.h"
 #include "config/miosix_settings.h"
 
 namespace miosix {
@@ -110,7 +112,11 @@ public:
     /**
      * \return true if the filesystem failed to mount 
      */
-    bool mountFailed() const { return failed; }
+    bool mountFailed() 
+    { 
+        return !(filesystem.fs_type == FS_FAT12 || filesystem.fs_type == FS_FAT16 
+            || filesystem.fs_type == FS_FAT32); 
+    }
     
     /**
      * Destructor
@@ -131,3 +137,4 @@ private:
 } //namespace miosix
 
 #endif //FAT32_H
+#endif
