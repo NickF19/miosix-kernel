@@ -291,7 +291,7 @@ namespace miosix
         if (seekPastEnd > 0)
         {
             // If filling the gap would overflow we should not even start
-            if (seekPastEnd + static_cast<off_t>(f_size(&file)) + len > 0xffffffffffffffff)
+            if (seekPastEnd + static_cast<off_t>(f_size(&file)) + len > 0xffffffff)
                 return -EOVERFLOW;
             // To write zeros efficiently we have to allocate a buffer of zeros
             unsigned long long int bufSize = min<unsigned long long int>(seekPastEnd, FATFS_EXTEND_BUFFER);
