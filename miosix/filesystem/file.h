@@ -125,6 +125,19 @@ public:
      * completed, or a negative number in case of errors
      */
     virtual off_t lseek(off_t pos, int whence)=0;
+
+    #if _FS_EXFAT == 1
+     /**
+     * Move file pointer, if the file supports random-access.
+     * 64-bit offset version of lseek with 64 bit offset
+     * \param pos offset to sum to the beginning of the file, current position
+     * or end of file, depending on whence
+     * \param whence SEEK_SET, SEEK_CUR or SEEK_END
+     * \return the offset from the beginning of the file if the operation
+     * completed, or a negative number in case of errors
+     */
+    virtual long long int lseek64(long long int pos, int whence);
+    #endif
     
     /**
      * Truncate the file
@@ -132,6 +145,15 @@ public:
      * \return 0 on success, or a negative number on failure
      */
     virtual int ftruncate(off_t size)=0;
+    
+    #if _FS_EXFAT == 1
+    /**
+     * Truncate the file, 64-bit offset version
+     * \param size new file size
+     * \return 0 on success, or a negative number on failure
+     */
+    virtual long int ftruncate64(long long int size);
+    #endif
 
     /**
      * Return file information.
@@ -353,6 +375,16 @@ public:
      * \return 0 on success, or a negative number on failure
      */
     virtual int truncate(StringPart& name, off_t size)=0;
+
+    #if _FS_EXFAT == 1
+    /**
+     * Change file size, 64-bit version
+     * \param name path name, relative to the local filesystem
+     * \param size new file size
+     * \return 0 on success, or a negative number on failure
+     */
+    int truncate64(StringPart& name, off_t size){return -1;};
+    #endif
     
     /**
      * Remove a file or directory

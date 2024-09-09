@@ -208,6 +208,13 @@ void FilesystemBase::fileCloseHook()
 
 FilesystemBase::~FilesystemBase() {}
 
+#if _FS_EXFAT == 1
+    // Not implemented except for exfat filesystems
+    long long int FileBase::lseek64(long long int pos, int whence) {return -1;}
+    long int FileBase::ftruncate64(long long int size) {return -1;}
+
+#endif
+
 #endif //WITH_FILESYSTEM
 
 } //namespace miosix

@@ -254,6 +254,20 @@ int FileDescriptorTable::truncate(const char *name, off_t size)
     return openData.fs->truncate(sp,size);
 }
 
+#if _FS_EXFAT == 1
+long int FileDescriptorTable::truncate64(const char *name, long long int size)
+{
+    if(size<0) return -EINVAL;
+    if(name==nullptr || name[0]=='\0') return -EFAULT;
+    string path=absolutePath(name);
+    if(path.empty()) return -ENAMETOOLONG;
+    ResolvedPath openData=FilesystemManager::instance().resolvePath(path);
+    if(openData.result<0) return openData.result;
+    StringPart sp(path,string::npos,openData.off);
+    return openData.fs->truncate64(sp,size);
+}
+#endif
+
 int FileDescriptorTable::rename(const char *oldName, const char *newName)
 {
     if(oldName==0 || oldName[0]=='\0') return -EFAULT;

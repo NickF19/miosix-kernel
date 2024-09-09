@@ -226,11 +226,30 @@ namespace miosix
         virtual off_t lseek(off_t pos, int whence);
 
         /**
-         * Truncate the file
+         * Move file pointer, if the file supports random-access.
+         * 64-bit version for exfat
+         * \param pos offset to sum to the beginning of the file, current position
+         * or end of file, depending on whence
+         * \param whence SEEK_SET, SEEK_CUR or SEEK_END
+         * \return the offset from the beginning of the file if the operation
+         * completed, or a negative number in case of errors
+         */
+        virtual long long int lseek64(long long int pos, int whence);
+
+        
+        /**
+         * Truncate the file, replaced by 64-bit version
          * \param size new file size
          * \return 0 on success, or a negative number on failure
          */
         virtual int ftruncate(off_t size);
+
+        /**
+         * Truncate the file
+         * \param size new file size
+         * \return 0 on success, or a negative number on failure
+         */
+        virtual long int ftruncate64(long long int size);
 
         /**
          * Return file information.
@@ -268,7 +287,7 @@ namespace miosix
         int inode = 0;
         /// Used to map FatFs behavior into POSIX. Variable is 0 as long as we seek
         /// within, contains by how many bytes we seeked past the end otherwise
-        off_t seekPastEnd = 0;
+        FSIZE_t seekPastEnd = 0;
     };
 
     //
@@ -291,17 +310,17 @@ namespace miosix
         if (seekPastEnd > 0)
         {
             // If filling the gap would overflow we should not even start
-            if (seekPastEnd + static_cast<off_t>(f_size(&file)) + len > 0xffffffff)
+            if (seekPastEnd + static_cast<FSIZE_t>(f_size(&file)) + len > 0xffffffffffffffff)
                 return -EOVERFLOW;
             // To write zeros efficiently we have to allocate a buffer of zeros
-            unsigned long long int bufSize = min<unsigned long long int>(seekPastEnd, FATFS_EXTEND_BUFFER);
+            unsigned long long bufSize = min<unsigned long long>(seekPastEnd, FATFS_EXTEND_BUFFER);
             unique_ptr<char, decltype(&free)> buffer(
                 reinterpret_cast<char *>(calloc(1, bufSize)), &free);
             if (buffer.get() == nullptr)
                 return -ENOMEM; // Not enough memory
             while (seekPastEnd > 0)
             {
-                unsigned int toWrite = min<unsigned long long int>(seekPastEnd, bufSize);
+                unsigned int toWrite = min<unsigned long long>(seekPastEnd, bufSize);
                 int res = translateError(f_write(&file, buffer.get(), toWrite, &bytesWritten));
                 if (res || bytesWritten == 0)
                     return res; // Error while filling the gap
@@ -329,14 +348,17 @@ namespace miosix
         return static_cast<int>(bytesRead);
     }
 
-    off_t ExFatFile::lseek(off_t pos, int whence)
+    off_t ExFatFile::lseek(off_t pos, int whence) {return -1;}
+
+
+    long long int ExFatFile::lseek64(long long int pos, int whence)
     {
         Lock<FastMutex> l(mutex);
-        off_t offset, fileSize = static_cast<off_t>(f_size(&file));
+        long long int offset, fileSize = static_cast<long long int>(f_size(&file));
         switch (whence)
         {
         case SEEK_CUR:
-            offset = static_cast<off_t>(f_tell(&file)) + seekPastEnd + pos;
+            offset = static_cast<long long int>(f_tell(&file)) + seekPastEnd + pos;
             break;
         case SEEK_SET:
             offset = pos;
@@ -370,19 +392,21 @@ namespace miosix
         return offset + seekPastEnd;
     }
 
-    int ExFatFile::ftruncate(off_t size)
+    int ExFatFile::ftruncate(off_t size){return -1;}
+
+    long int ExFatFile::ftruncate64(long long int size)
     {
         Lock<FastMutex> l(mutex);
-        off_t fileSize = static_cast<off_t>(f_size(&file));
+        long long int fileSize = static_cast<long long int>(f_size(&file));
         if (size == fileSize)
             return 0; // Nothing to do
-        off_t curPos = static_cast<off_t>(f_tell(&file)) + seekPastEnd;
+        long long int curPos = static_cast<long long int>(f_tell(&file)) + seekPastEnd;
 
         int result = 0;
         if (size < fileSize)
         {
             // Shrinking, FatFs f_truncate truncates to the current file position
-            int r = translateError(f_lseek(&file, static_cast<unsigned long>(size)));
+            int r = translateError(f_lseek(&file, static_cast<FSIZE_t>(size)));
             if (r)
                 return r;
             result = translateError(f_truncate(&file));
@@ -390,13 +414,13 @@ namespace miosix
         else
         {
             // Enlarging, can't use f_truncate so seek past the end an write
-            off_t r = lseek(size, SEEK_SET);
+            long long int r = lseek64(size, SEEK_SET);
             if (r < 0)
                 return r;
             result = write(nullptr, 0);
         }
         // Restore previous file position and return
-        off_t r = lseek(curPos, SEEK_SET);
+        long long int r = lseek64(curPos, SEEK_SET);
         if (r < 0)
             return r;
         return result;
@@ -411,7 +435,7 @@ namespace miosix
         pstat->st_nlink = 1;
         pstat->st_size = f_size(&file);
         pstat->st_blksize = 512;
-        pstat->st_blocks = (static_cast<off_t>(f_size(&file)) + 511) / 512;
+        pstat->st_blocks = (static_cast<unsigned long long>(f_size(&file)) + 511) / 512;
         return 0;
     }
 
@@ -577,13 +601,16 @@ namespace miosix
         return 0;
     }
 
-    int ExFatFs::truncate(StringPart &name, off_t size)
+    int ExFatFs::truncate(StringPart &name, off_t size) {return -1;}
+
+
+    int ExFatFs::truncate64(StringPart &name, long long int size)
     {
         // FatFs does not have a truncate, so we need to open the file and ftruncate
         intrusive_ref_ptr<FileBase> file;
         if (int result = open(file, name, O_WRONLY, 0))
             return result;
-        return file->ftruncate(size);
+        return file->ftruncate64(size);
     }
 
     int ExFatFs::unlink(StringPart &name)
