@@ -53,7 +53,7 @@ DRESULT disk_read (
 )
 {
     #if _FS_EXFAT == 1 
-    if(pdrv->lseek64(static_cast<long long int>(sector)*512,SEEK_SET)<0) return RES_ERROR;
+    if(pdrv->lseek64(static_cast<long long int>(sector)*512,SEEK_SET)<0 && pdrv->read(buff,count*512)!=static_cast<ssize_t>(count)*512) return RES_ERROR;
     #else
     if(pdrv->lseek(static_cast<off_t>(sector)*512,SEEK_SET)<0) return RES_ERROR;
     #endif
@@ -73,7 +73,7 @@ DRESULT disk_write (
 )
 {
     #if _FS_EXFAT == 1 
-    if(pdrv->lseek64(static_cast<long long int>(sector)*512,SEEK_SET)<0) return RES_ERROR;
+    if(pdrv->lseek64(static_cast<long long int>(sector)*512,SEEK_SET)<0 && pdrv->read(buff,count*512)!=static_cast<ssize_t>(count)*512) return RES_ERROR;
     #else
     if(pdrv->lseek(static_cast<off_t>(sector)*512,SEEK_SET)<0) return RES_ERROR;
     #endif    
