@@ -1119,7 +1119,6 @@ static FRESULT chk_share (	/* Check if the file can be accessed */
 	return (acc != 0 || dp->obj.fs->Files[i].ctr == 0x100) ? FR_LOCKED : FR_OK;
 }
 
-// TODO: Check the signature change was good
 static int enq_share (DIR_* dp)	/* Check if an entry is available for a new object */
 {
 	UINT i;
@@ -3452,7 +3451,7 @@ static int pattern_match (	/* 0:mismatched, 1:matched */
 /* Get logical drive number from path name                               */
 /*-----------------------------------------------------------------------*/
 
-// TODO: Such code was commented due to Miosix managing such aspect?
+// Note: Such code was commented due to Miosix managing such aspects
 
 // static int get_ldnumber (	/* Returns logical drive number (-1:invalid drive number or null pointer) */
 // 	const TCHAR** path		/* Pointer to pointer to the path name */
@@ -3742,17 +3741,6 @@ static UINT check_fs (	/* 0:FAT/FAT32 VBR, 1:exFAT VBR, 2:Not FAT and valid BS, 
 /*-----------------------------------------------------------------------*/
 
 /* (It supports only generic partitioning rules, MBR, GPT and SFD) */
-
-// TODO: Some calls use old parameter wmode, change accordingly since now using part
-// TODO: Check that the returned error types are coherent and correct
-/**
- * \brief Contains both the FRESULT and UINT fmt, to avoid external checks to determine res from the fmt and keep fmt.
- */
-struct FIND_RETURN{
-	FRESULT res;
-	UINT fmt;	// fmt = 0:FAT/FAT32 VBR, 1:exFAT VBR, 2:Not FAT and valid BS, 3:Not FAT and invalid BS, 4:Disk error
-
-};
 
 static FIND_RETURN find_volume (	/* Returns BS status found in the hosting drive */
 	FATFS* fs		/* Filesystem object */
@@ -4234,7 +4222,6 @@ static FRESULT mount_volume (	/* FR_OK(0): successful, !=0: an error occurred */
 /* Check if the file/directory object is valid or not                    */
 /*-----------------------------------------------------------------------*/
 
-// TODO: The validate function uses fatfs disk functions... See how to map them to Miosix...
 static FRESULT validate (	/* Returns FR_OK or FR_INVALID_OBJECT */
 	FFOBJID* obj			/* Pointer to the FFOBJID, the 1st member in the FIL/DIR structure, to check validity */
 )
@@ -4334,7 +4321,6 @@ FRESULT f_mount (
 	if (/*opt == 0*/umount || opt != 1) return FR_OK;	/* Do not mount now, it will be mounted in subsequent file functions */
 
 	res = find_volume(fs /*&path,*/ ).res;	/* Find the volume */
-	// TODO: This should be seen since mount_volume at start mess with the Fat32 trymount
 	if(res != FR_OK)
 		res = mount_volume(fs, 0);	/* Force mounted the volume */
 	LEAVE_FF(fs, res);
@@ -4351,7 +4337,6 @@ FRESULT f_mount (
 FRESULT f_open (
 	FATFS *fs,          /* By TFT: added to get rid of static variables */
 	FIL* fp,			/* Pointer to the blank file object */
-	// TODO: to char => utf8.
 	const /*TCHAR**/ char *path,	/* Pointer to the file name */
 	BYTE mode			/* Access mode and open mode flags */
 )
@@ -4888,7 +4873,6 @@ FRESULT f_close (
 /*-----------------------------------------------------------------------*/
 
 #if _FS_RPATH >= 1
-// TODO: Control usage of such function!
 // FRESULT f_chdrive (
 // 	const TCHAR* path		/* Drive number to set */
 // )
@@ -4922,7 +4906,6 @@ FRESULT f_chdir (
 
 
 	/* Get logical drive */
-	// TODO: See mount volume usage...
 	//res = mount_volume(&path, &fs, 0);
 	res = find_volume(fs).res;
 
@@ -5911,12 +5894,11 @@ FRESULT f_rename (
 	LBA_t sect;
 	DEF_NAMEBUF
 
-	// TODO: Check such change is coherent.
 	//get_ldnumber(&path_new);						/* Snip the drive number of new name off */
 	res = follow_path(&djn, path_new);
 
 	//res = mount_volume(&path_old, &fs, FA_WRITE);	/* Get logical drive of the old object */
-	res = find_volume(fs).res; // TODO: Check this one
+	res = find_volume(fs).res;
 
 	if (res == FR_OK) {
 		djo.obj.fs = fs;

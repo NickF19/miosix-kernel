@@ -286,7 +286,6 @@ typedef struct
 
 /* File function return code (FRESULT) */
 
-// TODO: Consider using enum class
 enum FRESULT {
 	FR_OK = 0,				/* (0) Succeeded */
 	FR_DISK_ERR,			/* (1) A hard error occurred in the low level disk I/O layer */
@@ -311,6 +310,14 @@ enum FRESULT {
 }; 
 
 
+/**
+ * \brief Contains both the FRESULT and UINT fmt, to avoid external checks to determine res from the fmt and keep fmt.
+ */
+struct FIND_RETURN{
+	FRESULT res;
+	UINT fmt;	// fmt = 0:FAT/FAT32 VBR, 1:exFAT VBR, 2:Not FAT and valid BS, 3:Not FAT and invalid BS, 4:Disk error
+
+};
 
 /*--------------------------------------------------------------*/
 /* FatFs Module Application Interface                           */
